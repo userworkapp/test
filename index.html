@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Оформление заказа</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script type="text/javascript" >
+       (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+       m[i].l=1*new Date();
+       for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+       k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+       (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+       const MY_METRIKA_ID = 108399071;
+
+       ym(MY_METRIKA_ID, "init", {
+            clickmap:true,
+            trackLinks:true,
+            accurateTrackBounce:true,
+            webvisor:true,
+            ecommerce:"dataLayer"
+       });
+    </script>
+ 
+<style>
+        :root {
+            --primary: #2481cc;
+            --bg: var(--tg-theme-bg-color, #ffffff);
+            --text: var(--tg-theme-text-color, #222222);
+            --sec-bg: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            --hint: var(--tg-theme-hint-color, #8e8e93);
+            --success: #2e7d32;
+            --warning: #e65100;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 20px; padding-bottom: 120px;
+            opacity: 0; transition: opacity 0.5s ease;
+        }
+
+        #progress {
+            position: fixed; top: 0; left: 0; height: 3px;
+            width: 50%; background: var(--primary);
+            z-index: 1000; transition: width 0.3s ease;
+        }
+
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h2 { margin: 0; font-size: 22px; font-weight: 700; }
+
+        .urgency-container {
+            display: none; background: rgba(255, 59, 48, 0.08); 
+            border: 1px solid rgba(255, 59, 48, 0.2); 
+            border-radius: 12px; padding: 12px; margin-bottom: 20px; 
+            align-items: center; gap: 10px; animation: slideUp 0.4s ease;
+        }
+
+        /* Карточки товаров */
+        .option-card {
+            background: var(--sec-bg);
+            border: 2px solid transparent;
+            border-radius: 16px; padding: 16px;
+            margin-bottom: 12px; cursor: pointer;
+            position: relative; transition: all 0.2s ease;
+        }
+        .option-card.active {
+            border-color: var(--primary);
+            background: rgba(36, 129, 204, 0.05);
+            transform: scale(1.01);
+        }
+        .option-card b { display: block; font-size: 17px !important; margin-bottom: 4px; padding-right: 60px; }
+        .option-card span { font-size: 12px; opacity: 0.7; line-height: 1.4; display: block; }
+        .price-tag { position: absolute; right: 16px; top: 16px; font-weight: 700; color: var(--primary); }
+        
+        .badge {
+            position: absolute; top: -10px; left: 16px;
+            background: var(--primary); color: white;
+            font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 8px;
+            text-transform: uppercase;
+        }
+
+        /* Преимущества и цены */
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .benefit-item {
+            background: var(--sec-bg);
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .old-price {
+            text-decoration: line-through;
+            opacity: 0.5;
+            font-size: 13px;
+            margin-right: 5px;
+            font-weight: 400;
+        }
+        .badge-save {
+            background: #e8f5e9;
+            color: #2e7d32;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+
+        /* Доставка и формы */
+        .free-shipping-badge {
+            display: inline-block; background: #e8f5e9; color: var(--success);
+            font-size: 11px; font-weight: 700; padding: 6px 12px; border-radius: 8px;
+            margin-bottom: 4px; text-transform: uppercase; transition: all 0.3s ease;
+        }
+        .free-shipping-badge.warning { background: #fff3e0; color: var(--warning); }
+        .shipping-note { font-size: 10px; opacity: 0.5; margin-bottom: 12px; margin-left: 2px; }
+
+        .delivery-selector { display: flex; gap: 8px; margin-bottom: 15px; }
+        .delivery-option {
+            flex: 1; padding: 10px; background: var(--sec-bg);
+            border: 1.5px solid transparent; border-radius: 12px;
+            text-align: center; font-size: 12px; font-weight: 600; cursor: pointer;
+        }
+        .delivery-option.active { border-color: var(--primary); color: var(--primary); background: rgba(36,129,204,0.05); }
+
+        .upsell-card {
+            background: linear-gradient(135deg, rgba(36,129,204,0.05) 0%, rgba(36,129,204,0.1) 100%);
+            border: 1px dashed var(--primary); border-radius: 12px;
+            padding: 12px; margin: 20px 0; display: flex; align-items: center; gap: 12px; cursor: pointer;
+        }
+        .upsell-card input { width: 20px; height: 20px; accent-color: var(--primary); }
+        .upsell-info b { font-size: 14px; display: block; color: var(--primary); }
+        .upsell-info span { font-size: 12px; opacity: 0.8; }
+
+        .form-section { margin-top: 25px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: var(--hint); text-transform: uppercase; }
+        input, textarea {
+            width: 100%; padding: 14px; border: 1px solid rgba(0,0,0,0.05); border-radius: 12px;
+            background: var(--sec-bg); color: var(--text); font-size: 16px; box-sizing: border-box;
+        }
+
+        .info-container { margin: 25px 0; }
+        details { background: var(--sec-bg); border-radius: 12px; margin-bottom: 8px; }
+        summary { padding: 12px 16px; font-size: 14px; font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+        summary::after { content: '→'; opacity: 0.3; transition: transform 0.2s; }
+        details[open] summary::after { transform: rotate(90deg); }
+        .details-content { padding: 0 16px 12px; font-size: 13px; line-height: 1.5; opacity: 0.8; }
+
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; padding: 16px; background: var(--bg); box-sizing: border-box; z-index: 100; border-top: 1px solid rgba(0,0,0,0.05); }
+        .btn-main {
+            width: 100%; padding: 18px; border: none; border-radius: 16px;
+            background: var(--primary); color: white; font-size: 16px; font-weight: 700;
+            opacity: 0.5; transition: all 0.3s ease;
+        }
+        .btn-main.ready { opacity: 1; box-shadow: 0 4px 15px rgba(36, 129, 204, 0.3); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Основная плашка */
+.video-banner {
+    background: var(--sec-bg);
+    border-radius: 12px;
+    padding: 14px;
+    margin: 20px 0 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    border: 1px solid rgba(36, 129, 204, 0.2);
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden; /* Обрезает лишние камеры по краям */
+}
+
+/* Слой с "рассыпанными" камерами по всей площади */
+.video-banner::before {
+    /* Добавляем много иконок с разным количеством пробелов между ними */
+    content: "🎥   📹    🎥   📹   🎥\A   📹    🎥   📹    🎥   📹\A 🎥   📹    🎥   📹   🎥";
+    white-space: pre; /* Позволяет работать переносам строк \A */
+    position: absolute;
+    width: 150%; /* Делаем слой шире кнопки */
+    height: 150%; /* И выше кнопки */
+    font-size: 16px;
+    opacity: 0.25; /* Прозрачность */
+    top: -10%; 
+    left: -10%;
+    transform: rotate(-15deg); /* Наклоняем всё "облако" иконок */
+    pointer-events: none;
+    line-height: 1.8; /* Расстояние между рядами камер */
+    text-align: center;
+}
+
+.video-banner:active {
+    transform: scale(0.98);
+}
+
+.video-banner b {
+    font-size: 14px;
+    color: var(--primary);
+    position: relative;
+    z-index: 10; /* Текст ВСЕГДА поверх камер */
+    /* Эффект "островка" для текста, чтобы камеры под ним не мешали */
+    background: var(--sec-bg);
+    padding: 2px 8px;
+    border-radius: 6px;
+    box-shadow: 0 0 15px 10px var(--sec-bg);
+}
+
+/* Модальное окно */
+.video-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(8px);
+}
+
+.video-content {
+    position: relative;
+    width: 90%;
+    max-width: 450px;
+}
+
+.video-content video {
+    width: 100%;
+    border-radius: 20px;
+    display: block;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.close-video {
+    position: absolute;
+    top: -45px;
+    right: 0;
+    color: white;
+    font-size: 35px;
+    padding: 10px;
+    cursor: pointer;
+}
+    
+    </style>
+</head>
+<body class="ym-disable-keys" onload="document.body.style.opacity='1'; updateUrgency();">
+
+<div id="progress"></div>
+
+<div class="header">
+    <h2>Внешний мозг для кухни 🍏</h2>
+    <p style="font-size: 11px; opacity: 0.7; margin-top: 5px;">Сильно упрощает закупку продуктов и готовку на дни вперед</p>
+</div>
+
+<div id="urgency-banner" class="urgency-container">
+    <span style="font-size: 18px;">🔥</span>
+    <span id="urgency-text" style="font-size: 13px; color: #d32f2f; line-height: 1.4; font-weight: 500;"></span>
+</div>
+
+<div class="benefits-grid">
+    <div class="benefit-item">🛡️ Ламинированные</div>
+    <div class="benefit-item">✍️ Маркер в комплекте</div>
+    <div class="benefit-item">🚀 Отправляю за 24ч</div>
+    <div class="benefit-item">🥦 99% всех продуктов</div>
+</div>
+
+<div id="options">
+    <div class="option-card active" onclick="selectOption('combo', PRICES.combo, this)">
+        <div class="badge">Самый выгодный • Сэкономишь 490₽</div>
+        <b>💎 COMBO: Всё включено</b>
+        <span>Карточки на холодильник + маркер + 28 рецептов в PDF. Всё как в Reels.</span>
+        <div class="price-tag">                            
+            <span class="old-price">3480₽</span>
+            <span id="price_combo">2990₽</span>
+        </div>
+    </div>
+
+    <div class="option-card" onclick="selectOption('cards', PRICES.cards, this)">
+        <b>🧲 Карточки (154 шт) + 🖍️</b>
+        <span>Отслеживаю по ним продукты. Помогает не покупать лишнее, не забывать нужное и всегда знать, что дома.</span>
+        <div class="price-tag" id="price_cards">2490₽</div>
+    </div>
+
+    <div class="option-card" onclick="selectOption('recipes', PRICES.recipes, this)">
+        <b>📖 28 рецептов в (PDF)</b>
+        <span>Сборник моих рецептов, по которым готовлю сам. Убирает ступор готовки, просто открыл и сразу готовишь, даже когда устал(а).</span>
+        <div class="price-tag" id="price_recipes">990₽</div>
+    </div>
+</div>
+
+<div id="upsell_section">
+    <div class="upsell-card" onclick="toggleUpsell()">
+        <input type="checkbox" id="upsell_check" onchange="updateProgress()">
+        <div class="upsell-info">
+            <b>🎁 Подарок близким <span class="badge-save">выгода 500₽</span></b>
+            <span>Второй набор (154 карты) для мамы или друга за 1990₽.</span>
+        </div>
+    </div>
+</div>
+
+<div class="video-banner" onclick="openVideo('review.mp4')">
+    <span>🎥</span>
+    <b>Посмотреть видео-обзор</b>
+    <span>🎥</span>
+</div>
+
+<div id="videoOverlay" class="video-overlay" onclick="closeVideo()">
+    <div class="video-content" onclick="event.stopPropagation()">
+        <div class="close-video" onclick="closeVideo()">&times;</div>
+        <video id="player" controls playsinline preload="none">
+            <source src="" type="video/mp4">
+        </video>
+    </div>
+</div>
+    
+<div class="info-container">
+    <details> <summary>📦 Подробнее</summary>
+        <div class="details-content">
+            • <b>154 магнита:</b> ламинированные, не боятся влаги и жирных рук.<br>
+            • <b>Маркер:</b> «пиши-стирай» в комплекте для своих заметок.<br>
+            • <b>Пустые карточки:</b> для ваших уникальных продуктов.<br>
+            • <b>28 рецептов:</b> (7завтраков, 7обедов, 7ужинов, 7перекусов) с КБЖУ.<br>
+            • <b>2 версии PDF:</b> для телефона📱 и для печати🖨.
+        </div>
+    </details>
+
+    <details>
+        <summary>🚚 Доставка и оплата</summary>
+        <div class="details-content">
+            • <b>Скорость:</b> отправка Яндекс/СДЭК/Почтой за 24 часа.<br>
+            • <b>Рецепты:</b> PDF с рецептами прилетит в бот сразу после оплаты.<br>
+            • <b>Оплата:</b> безопасный платеж через бот в Telegram.
+        </div>
+    </details>
+</div>
+    
+<div id="main_form_container">
+    <div id="shipping_section" class="form-section">
+        <div id="shipping_badge" class="free-shipping-badge">🚛 Доставка по РФ Бесплатная*</div>
+        <div class="shipping-note">*Кроме удаленных регионов</div>
+    </div>
+
+    <div class="form-group">
+        <label>Способ доставки</label>
+        <div class="delivery-selector">
+            <div class="delivery-option active" onclick="setDelivery('Яндекс', this)">Яндекс</div>
+            <div class="delivery-option" onclick="setDelivery('СДЭК', this)">СДЭК</div>
+            <div class="delivery-option" onclick="setDelivery('Почта РФ', this)">Почта РФ</div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label>ФИО получателя</label>
+        <input type="text" id="name" class="ym-disable-keys" data-metrika-noindex placeholder="Иванов Иван Иванович" oninput="updateProgress()">
+    </div>
+    <div class="form-group">
+        <label>Контактный телефон</label>
+        <input type="tel" id="phone" class="ym-disable-keys" data-metrika-noindex placeholder="+7 (___) ___-__-__">
+    </div>
+    <div class="form-group">
+        <label id="address_label">Адрес ПВЗ или дома</label>
+        <textarea id="address" class="ym-disable-keys" data-metrika-noindex rows="2" placeholder="Город, улица, дом или адрес пункта выдачи" oninput="updateProgress()"></textarea>
+    </div>
+</div>
+
+<div class="footer">
+    <button class="btn-main" id="submit_btn" onclick="sendData()">Оформить за 2990₽</button>
+</div>
+
+<script>
+    let tg = window.Telegram.WebApp;
+    tg.expand();
+
+    // ЦЕНТР УПРАВЛЕНИЯ ЦЕНАМИ
+    const PRICES = {
+        recipes: 990,
+        cards: 2490,
+        combo: 2990,
+        upsell: 1990
+    };
+
+    let selectedProduct = 'combo';
+    let selectedPrice = PRICES.combo;
+    let selectedDelivery = 'Яндекс';
+
+    function updateUrgency() {
+        const now = new Date();
+        const banner = document.getElementById('urgency-banner');
+        const textElem = document.getElementById('urgency-text');
+        const seed = now.getDate() + now.getMonth();
+        const ordersCount = 2 + (seed % 5); 
+
+        if (now.getHours() < 17) {
+            textElem.innerHTML = `Заказали уже <b>${ordersCount} шт</b>. Если успеешь оформить до <b>17:00</b>, тогда отправлю сегодня!`;
+        } else {
+            textElem.innerHTML = `Дневную партию уже отправил. Закажешь сейчас, отправлю <b>завтра утром</b>!`;
+        }
+        banner.style.display = 'flex';
+    }
+
+    const phoneInput = document.getElementById('phone');
+    phoneInput.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length > 11) val = val.substring(0, 11);
+        if (val.startsWith('7') || val.startsWith('8')) val = val.substring(1);
+        let res = '+7 (';
+        if (val.length > 0) res += val.substring(0, 3);
+        if (val.length > 3) res += ') ' + val.substring(3, 6);
+        if (val.length > 6) res += '-' + val.substring(6, 8);
+        if (val.length > 8) res += '-' + val.substring(8, 10);
+        e.target.value = res;
+        updateProgress();
+    });
+
+    function selectOption(type, price, element) {
+        selectedProduct = type;
+        selectedPrice = price;
+        document.querySelectorAll('.option-card').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+        
+        const shipping = document.getElementById('main_form_container');
+        const upsell = document.getElementById('upsell_section');
+        
+        if (type === 'recipes') {
+            shipping.style.display = 'none';
+            upsell.style.display = 'none';
+            document.getElementById('upsell_check').checked = false;
+        } else {
+            shipping.style.display = 'block';
+            upsell.style.display = 'flex';
+        }
+        
+        updateProgress();
+        if (tg.isVersionAtLeast('6.1')) {
+        tg.HapticFeedback.selectionChanged();
+        }
+    }
+
+    function setDelivery(method, element) {
+        selectedDelivery = method;
+        document.querySelectorAll('.delivery-option').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+        if (tg.isVersionAtLeast('6.1')) {
+        tg.HapticFeedback.selectionChanged();
+        }
+    }
+
+    function toggleUpsell() {
+        const check = document.getElementById('upsell_check');
+        check.checked = !check.checked;
+        if (tg.isVersionAtLeast('6.1')) {
+            tg.HapticFeedback.impactOccurred('light');
+        }
+        updateProgress();
+    }
+
+    function updateProgress() {
+        const addrField = document.getElementById('address');
+        const badge = document.getElementById('shipping_badge');
+        
+        if (selectedProduct !== 'recipes' && addrField) {
+            const addressText = addrField.value.toLowerCase();
+            const remoteRegions = ['магадан', 'якутск', 'норильск', 'сахалин', 'камчатк', 'анадырь', 'чукот', 'дудинка'];
+            const isRemote = remoteRegions.some(region => addressText.includes(region));
+
+            if (isRemote) {
+                badge.innerHTML = "📍 Регион: расчет доставки отдельно";
+                badge.classList.add('warning');
+            } else {
+                badge.innerHTML = "🚛 Доставка по РФ Бесплатная*";
+                badge.classList.remove('warning');
+            }
+        }
+
+        const hasUpsell = document.getElementById('upsell_check').checked;
+        const finalPrice = selectedPrice + (hasUpsell ? PRICES.upsell : 0);
+        
+        let isReady = false;
+        if (selectedProduct === 'recipes') {
+            isReady = true;
+        } else {
+            const nameOk = document.getElementById('name').value.trim().length > 5;
+            const phoneOk = document.getElementById('phone').value.length === 18;
+            const addrOk = document.getElementById('address').value.trim().length > 8;
+            isReady = nameOk && phoneOk && addrOk;
+        }
+
+        const btn = document.getElementById('submit_btn');
+        btn.innerText = `Оформить за ${finalPrice}₽`;
+        
+        const progress = document.getElementById('progress');
+        if (isReady) {
+            btn.classList.add('ready');
+            progress.style.width = '100%';
+        } else {
+            btn.classList.remove('ready');
+            progress.style.width = '50%';
+        }
+    }
+
+    function sendData() {
+        const btn = document.getElementById('submit_btn');
+        if (!btn.classList.contains('ready')) {
+            if (tg.isVersionAtLeast('6.1')) {
+            tg.HapticFeedback.notificationOccurred('error');
+            }
+            return;
+        }
+
+        const hasUpsell = document.getElementById('upsell_check').checked;
+        const isRecipes = (selectedProduct === 'recipes');
+        
+        let productTypeForPython = "";
+        if (selectedProduct === 'combo') {
+            productTypeForPython = "COMBO (Карточки + Рецепты)";
+        } else if (selectedProduct === 'recipes') {
+            productTypeForPython = "Рецепты (PDF)";
+        } else {
+            productTypeForPython = "Карточки";
+        }
+
+        if (hasUpsell) {
+            productTypeForPython += " + Подарочный набор";
+        }
+        
+        const data = {
+            product_type: productTypeForPython,
+            quantity: hasUpsell ? 2 : 1,
+            price: selectedPrice + (hasUpsell ? PRICES.upsell : 0),
+            delivery_method: isRecipes ? "Цифра" : selectedDelivery,
+            name: isRecipes ? "Цифровой клиент" : document.getElementById('name').value.trim(),
+            phone: isRecipes ? "—" : document.getElementById('phone').value,
+            address: isRecipes ? "В боте" : document.getElementById('address').value.trim()
+        };
+
+        // --- ОТПРАВКА В МЕТРИКУ ---
+        if (typeof ym !== 'undefined') {
+            const finalPrice = selectedPrice + (hasUpsell ? PRICES.upsell : 0);
+            ym(MY_METRIKA_ID, 'reachGoal', 'new_order', {
+                price: finalPrice,
+                product: productTypeForPython
+            });
+        }
+
+        // --- ОЧИСТКА ДАННЫХ (Zero Footprint) ---
+        document.getElementById('name').value = '';
+        document.getElementById('phone').value = '';
+        document.getElementById('address').value = '';
+
+        tg.sendData(JSON.stringify(data));
+        
+        // Пауза перед закрытием, чтобы Метрика успела отправить запрос
+        setTimeout(() => {
+            tg.close();
+        }, 500);
+    }
+
+    // Инициализация цен в карточках из объекта PRICES
+    document.getElementById('price_recipes').innerText = PRICES.recipes + '₽';
+    document.getElementById('price_cards').innerText = PRICES.cards + '₽';
+    document.getElementById('price_combo').innerText = PRICES.combo + '₽';
+     
+// Отправляем ID пользователя в Метрику принудительно
+if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+    const userId = window.Telegram.WebApp.initDataUnsafe.user.id;
+    ym(MY_METRIKA_ID, 'userParams', {
+        tg_id: userId
+    });
+    // Для отладки в консоли (потом можно удалить)
+    console.log("ID отправлен в Метрику:", userId);
+} else {
+    ym(MY_METRIKA_ID, 'userParams', {
+        tg_id: "not_in_telegram"
+    });
+}
+    function openVideo(src) {
+    const overlay = document.getElementById('videoOverlay');
+    const player = document.getElementById('player');
+    const source = player.querySelector('source');
+    
+    // Правильная установка источника для видео
+    source.src = src;
+    player.load(); // Обязательно для смены источника
+    
+    overlay.style.display = 'flex';
+    player.play().catch(e => console.log("Автоплей заблокирован"));
+
+    if (tg.isVersionAtLeast('6.1')) {
+        tg.HapticFeedback.impactOccurred('medium');
+    }
+}
+
+function closeVideo() {
+    const overlay = document.getElementById('videoOverlay');
+    const player = document.getElementById('player');
+    
+    player.pause();
+    overlay.style.display = 'none';
+    player.querySelector('source').src = ""; 
+}
+
+// Финальная инициализация
+tg.ready(); 
+updateProgress();
+    
+</script>
+</body>
+</html>
+
+Есть такой  мой вебапп в тг, мне кажется что эта страница пытается как бы продать. Навал, бы я думаю просто указал бы что есть, без разукрашеств, верно? или что ты скажешь, только честно
